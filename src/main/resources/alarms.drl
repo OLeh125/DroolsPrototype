@@ -1,0 +1,80 @@
+package KieRule;
+
+import com.drool.test.db.model.Alarm
+import com.drool.test.services.AlarmService
+import com.drool.test.services.RuleService
+import com.drool.test.db.model.RulesParameters
+
+global AlarmService alarmService;
+global RuleService ruleService;
+global RulesParameters ruleParameters;
+
+rule "if the company of the alarm is one of [list]"
+when
+ $alarm : Alarm(processed == false && companyUUID != null && ruleParameters.companyUUIDs contains companyUUID)
+then
+ ruleService.sendToTopic1($alarm);
+modify($alarm){
+  setProcessed(true)
+}
+end
+
+rule "if the alarm was raised into this time range"
+when
+ $alarm : Alarm(processed == false && ruleService.raisedInToTimeRange($alarm,ruleParameters.timeRange))
+then
+ ruleService.sendToTopic2($alarm);
+modify($alarm){
+  setProcessed(true)
+}
+end
+
+rule "if the controller type of the alarm is one of [list]"
+when
+ $alarm : Alarm(processed == false && gatewayType != null && ruleParameters.controllerTypes contains gatewayType)
+then
+ ruleService.sendToTopic3($alarm);
+modify($alarm){
+  setProcessed(true)
+}
+end
+
+rule "if the asset kind is one of [list]"
+when
+ $alarm : Alarm(processed == false && assetModel != null && ruleParameters.assetModel contains assetModel)
+then
+ ruleService.sendToTopic4($alarm);
+modify($alarm){
+  setProcessed(true)
+}
+end
+
+rule "if the alarm type is one of [list]"
+when
+ $alarm : Alarm(processed == false && alarmType != null && ruleParameters.alarmTypes contains alarmType)
+then
+ ruleService.sendToTopic5($alarm);
+modify($alarm){
+  setProcessed(true)
+}
+end
+
+rule "if the alarm is closed after Z minutes"
+when
+ $alarm : Alarm(processed == false && cleared == null && ruleService.isClosedIn(ruleParameters.minsToBeClosed, $alarm))
+then
+ ruleService.sendToTopic6($alarm);
+modify($alarm){
+  setProcessed(true)
+}
+end
+
+rule "if the alarm did not occur more than X "
+when
+ $alarm : Alarm(timesOccurred < ruleParameters.timeOccurred)
+then
+ ruleService.sendToTopic7($alarm);
+modify($alarm){
+  setProcessed(true)
+}
+end
